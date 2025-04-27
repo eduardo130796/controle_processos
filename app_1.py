@@ -14,10 +14,20 @@ st.set_page_config(
 # Carrega os dados
 #df = pd.read_parquet("atividades_completas.parquet")
 
-url = "https://github.com/eduardo130796/controle_processos/blob/main/atividades_completas.parquet"
+# Função para carregar os dados (com cache)
+@st.cache_data(ttl=60*60*24)  # Cache de 1 dia
+def carregar_dados():
+    url = "https://raw.githubusercontent.com/eduardo130796/controle_processos/main/atividades_completas.parquet"
+    return pd.read_parquet(url)
 
-# Carrega o arquivo parquet
-df = pd.read_parquet(url)
+# Carregar os dados automaticamente ou quando expirar o cache
+df = carregar_dados()
+
+
+# Exibindo a última atualização
+ultimo_carregamento = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+
 usuarios_nomes = {
     "adleide.falcao": "Adleide Falcão",
     "amanda.levyski": "Amanda Levyski",
@@ -154,6 +164,7 @@ df_resultado = pd.DataFrame(resultados)
 df_resultado = df_resultado.sort_values(by="Responsável", ascending=True)
 
 with st.sidebar:
+    st.text(f"Última atualização: {ultimo_carregamento}")
     st.write("Filtros:")
     data_inicio = st.date_input("Data inicial", value=df_resultado["Data Recebido"].min().date())
     data_fim = st.date_input("Data final", value=df_resultado["Data Recebido"].max().date())
@@ -283,7 +294,9 @@ def grafico_media_prazos(df_resultado):
             .reset_index()
             .rename(columns={"Dias de Prazo": "Dias de Prazo Médio"})
         )
-
+        # Arredonda a média para 1 casa decimal (você pode ajustar esse valor conforme necessário)
+        df_media["Dias de Prazo Médio"] = df_media["Dias de Prazo Médio"].round(1)
+        
         fig = px.bar(
             df_media,
             x="Dias de Prazo Médio",
@@ -309,6 +322,8 @@ def grafico_media_prazos(df_resultado):
             .reset_index()
             .rename(columns={"Dias de Prazo": "Dias de Prazo Médio"})
         )
+        # Arredonda a média para 1 casa decimal (você pode ajustar esse valor conforme necessário)
+        df_media["Dias de Prazo Médio"] = df_media["Dias de Prazo Médio"].round(1)
 
         fig = px.bar(
             df_media,
